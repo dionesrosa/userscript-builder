@@ -1,6 +1,10 @@
+import { APP_NAME, VERSION } from "./constants.js";
 import build from "./commands/build.js";
 
 export async function run(args) {
+
+    console.log(`🔨 ${APP_NAME} v${VERSION}`);
+    console.log("");
 
     const command = args[0];
 
@@ -11,8 +15,6 @@ export async function run(args) {
             break;
 
         default:
-            console.log("User Script Builder");
-            console.log("");
             console.log("Commands:");
             console.log("  build");
             console.log("  init");
