@@ -39,6 +39,14 @@ Publish the built script to the configured destination:
 usb publish
 ```
 
+Draft and prerelease examples:
+
+```bash
+usb publish --draft
+usb publish --prerelease
+usb publish --publish-draft
+```
+
 `usb publish` requires:
 - a clean Git working tree
 - a Git remote named `origin` pointing to GitHub
@@ -49,6 +57,7 @@ It will:
 - push the branch and tag
 - create a GitHub Release
 - upload the built `.user.js` from `dist/`
+- publish an existing draft release when `--publish-draft` is used
 
 ## 📁 Project Structure
 

@@ -86,7 +86,9 @@ export async function createGitHubRelease({
     targetCommitish,
     name,
     body,
-    token
+    token,
+    draft = false,
+    prerelease = false
 }) {
     const response = await fetch(
         `https://api.github.com/repos/${owner}/${repo}/releases`,
@@ -98,8 +100,8 @@ export async function createGitHubRelease({
                 target_commitish: targetCommitish,
                 name,
                 body,
-                draft: false,
-                prerelease: false,
+                draft,
+                prerelease,
                 generate_release_notes: true
             })
         }
@@ -110,6 +112,100 @@ export async function createGitHubRelease({
     }
 
     return response.json();
+}
+
+export async function getGitHubReleaseByTag({
+    owner,
+    repo,
+    tagName,
+    token
+}) {
+    const response = await fetch(
+        `https://api.github.com/repos/${owner}/${repo}/releases/tags/${tagName}`,
+        {
+            headers: getGitHubHeaders(token)
+        }
+    );
+
+    if (response.status === 404) {
+        return null;
+    }
+
+    if (!response.ok) {
+        await throwForResponse(response, "Falha ao consultar release no GitHub");
+    }
+
+    return response.json();
+}
+
+export async function updateGitHubRelease({
+    owner,
+    repo,
+    releaseId,
+    token,
+    draft,
+    prerelease,
+    name,
+    body
+}) {
+    const response = await fetch(
+        `https://api.github.com/repos/${owner}/${repo}/releases/${releaseId}`,
+        {
+            method: "PATCH",
+            headers: getGitHubHeaders(token),
+            body: JSON.stringify({
+                draft,
+                prerelease,
+                name,
+                body
+            })
+        }
+    );
+
+    if (!response.ok) {
+        await throwForResponse(response, "Falha ao atualizar release no GitHub");
+    }
+
+    return response.json();
+}
+
+export async function listGitHubReleaseAssets({
+    owner,
+    repo,
+    releaseId,
+    token
+}) {
+    const response = await fetch(
+        `https://api.github.com/repos/${owner}/${repo}/releases/${releaseId}/assets`,
+        {
+            headers: getGitHubHeaders(token)
+        }
+    );
+
+    if (!response.ok) {
+        await throwForResponse(response, "Falha ao listar assets da release");
+    }
+
+    return response.json();
+}
+
+export async function deleteGitHubReleaseAsset({
+    owner,
+    repo,
+    assetId,
+    token
+}) {
+    const response = await fetch(
+        `https://api.github.com/repos/${owner}/${repo}/releases/assets/${assetId}`,
+        {
+            method: "DELETE",
+            headers: getGitHubHeaders(token)
+        }
+    );
+
+    if (!response.ok) {
+        await throwForResponse(response, "Falha ao remover asset antigo");
+    }
 }
 
 export async function uploadGitHubReleaseAsset({

@@ -17,15 +17,57 @@ import {
     createGitHubRelease,
     getGitHubRepository,
     getGitHubToken,
-    uploadGitHubReleaseAsset
+    getGitHubReleaseByTag,
+    listGitHubReleaseAssets,
+    deleteGitHubReleaseAsset,
+    uploadGitHubReleaseAsset,
+    updateGitHubRelease
 } from "../utils/github.js";
 
 function getReleaseTag(version) {
     return `v${version}`;
 }
 
-export default async function publish() {
+function parsePublishOptions(args) {
+    const options = {
+        draft: args.includes("--draft"),
+        prerelease: args.includes("--prerelease"),
+        publishDraft: args.includes("--publish-draft")
+    };
+
+    if (options.publishDraft && (options.draft || options.prerelease)) {
+        throw new Error(
+            "Use apenas --publish-draft sozinho para publicar um rascunho existente."
+        );
+    }
+
+    return options;
+}
+
+async function replaceExistingAsset(release, sourceFile, token, repository) {
+    const assetName = path.basename(sourceFile);
+    const assets = await listGitHubReleaseAssets({
+        owner: repository.owner,
+        repo: repository.repo,
+        releaseId: release.id,
+        token
+    });
+
+    const existingAsset = assets.find(asset => asset.name === assetName);
+
+    if (existingAsset) {
+        await deleteGitHubReleaseAsset({
+            owner: repository.owner,
+            repo: repository.repo,
+            assetId: existingAsset.id,
+            token
+        });
+    }
+}
+
+export default async function publish(args = []) {
     console.log("🚀 Comando publish");
+    const options = parsePublishOptions(args);
 
     let config = await loadConfig();
 
@@ -61,6 +103,51 @@ export default async function publish() {
 
     await fs.access(sourceFile);
 
+    if (options.publishDraft) {
+        const release = await getGitHubReleaseByTag({
+            owner: repository.owner,
+            repo: repository.repo,
+            tagName: releaseTag,
+            token
+        });
+
+        if (!release) {
+            throw new Error(
+                `Nenhuma release encontrada para a tag ${releaseTag}.`
+            );
+        }
+
+        if (!release.draft) {
+            throw new Error(
+                `A release ${releaseTag} já está publicada.`
+            );
+        }
+
+        await replaceExistingAsset(release, sourceFile, token, repository);
+
+        const updatedRelease = await updateGitHubRelease({
+            owner: repository.owner,
+            repo: repository.repo,
+            releaseId: release.id,
+            token,
+            draft: false,
+            prerelease: release.prerelease,
+            name: release.name || releaseTag,
+            body: release.body || `Release automática da versão ${config.version}.`
+        });
+
+        const asset = await uploadGitHubReleaseAsset({
+            uploadUrl: updatedRelease.upload_url,
+            assetPath: sourceFile,
+            assetName: path.basename(sourceFile),
+            token
+        });
+
+        console.log("✅ Draft publicada no GitHub:", updatedRelease.html_url);
+        console.log("✅ Asset enviado:", asset.browser_download_url);
+        return;
+    }
+
     if (await tagExists(releaseTag)) {
         throw new Error(`A tag ${releaseTag} já existe localmente.`);
     }
@@ -85,7 +172,9 @@ export default async function publish() {
         targetCommitish: branchName,
         name: releaseTag,
         body: `Release automática da versão ${config.version}.`,
-        token
+        token,
+        draft: options.draft,
+        prerelease: options.prerelease
     });
 
     console.log("✅ Release criada no GitHub:", release.html_url);
