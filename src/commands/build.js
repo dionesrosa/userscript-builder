@@ -6,8 +6,6 @@ import { generateScript } from "../utils/template.js";
 
 export default async function build() {
 
-    console.log("");
-
     let config = await loadConfig();
 
     console.log("⚙️ Config loaded");
