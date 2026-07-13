@@ -12,7 +12,7 @@ export async function readProjectFile(file) {
     } catch (error) {
 
         if (error.code === "ENOENT") {
-            throw new Error(`File not found: ${file}`);
+            throw new Error(`Arquivo não encontrado: ${file}`);
         }
 
         throw error;

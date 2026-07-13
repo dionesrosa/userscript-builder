@@ -7,36 +7,38 @@ import { getOutputFile } from "../utils/output.js";
 
 export default async function build() {
 
+    console.log("🚀 Comando build");
+
     let config = await loadConfig();
 
-    console.log("⚙️ Config loaded");
+    console.log("⚙️ Configurações carregadas");
 
     config = validateConfig(config);
 
-    console.log("✅ Config validated");
+    console.log("✅ Configurações validadas");
 
     console.log("");
-    console.log("📦 Project:", config.name);
-    console.log("🔖 Version:", config.version);
+    console.log("📦 Projeto:", config.name);
+    console.log("🔖 Versão:", config.version);
     console.log("");
 
     const script = await readProjectFile(config.entry);
 
-    console.log("📄 Entry:", config.entry);
+    console.log("📄 Entrada:", config.entry);
 
     const metadata = generateMetadata(config);
 
-    console.log("📝 Metadata generated");
+    console.log("📝 Metadados gerados");
 
     const output = generateScript(metadata, script);
 
-    console.log("🛠️ Script generated");
+    console.log("🛠️ Script gerado");
 
     const outputFile = getOutputFile(config);
 
     await writeProjectFile(outputFile, output);
 
     console.log("");
-    console.log("✅ Build completed!");
-    console.log("📁 Output:", outputFile);
+    console.log("✅ Build completo!");
+    console.log("📁 Saída:", outputFile);
 }
