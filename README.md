@@ -1,15 +1,14 @@
-# UserScript Builder
+# userscript-builder
 
-Um conjunto de ferramentas CLI moderno para criar, compilar e distribuir UserScripts para navegadores.
+Ferramenta CLI para criar, compilar e publicar userscripts com metadados prontos para o Tampermonkey.
 
 ## 🚀 Recursos
 
-- Compila UserScripts automaticamente
+- Compila userscripts automaticamente
 - Gera metadados para Tampermonkey
-- Agrupa arquivos do projeto
-- Gerenciamento de versão
-- Fluxo de release com commit automático
-- Automação de publicação no GitHub Releases
+- Organiza a estrutura do projeto
+- Gerencia versões com release automático
+- Publica builds no GitHub Releases
 
 ## 📦 Instalação
 
@@ -19,7 +18,7 @@ npm install
 
 ## 🔨 Uso
 
-Para compilar seu UserScript:
+Para compilar um userscript:
 
 ```bash
 usb build
