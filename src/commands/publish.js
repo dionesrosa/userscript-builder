@@ -15,13 +15,13 @@ import {
 } from "../utils/git.js";
 import {
     createGitHubRelease,
+    deleteGitHubReleaseAsset,
+    getGitHubReleaseByTag,
     getGitHubRepository,
     getGitHubToken,
-    getGitHubReleaseByTag,
     listGitHubReleaseAssets,
-    deleteGitHubReleaseAsset,
-    uploadGitHubReleaseAsset,
-    updateGitHubRelease
+    updateGitHubRelease,
+    uploadGitHubReleaseAsset
 } from "../utils/github.js";
 
 function getReleaseTag(version) {
@@ -44,8 +44,12 @@ function parsePublishOptions(args) {
     return options;
 }
 
-async function replaceExistingAsset(release, sourceFile, token, repository) {
-    const assetName = path.basename(sourceFile);
+function getAssetName(sourceFile) {
+    return path.basename(sourceFile);
+}
+
+async function removeExistingAssetIfNeeded(release, sourceFile, token, repository) {
+    const assetName = getAssetName(sourceFile);
     const assets = await listGitHubReleaseAssets({
         owner: repository.owner,
         repo: repository.repo,
@@ -63,6 +67,87 @@ async function replaceExistingAsset(release, sourceFile, token, repository) {
             token
         });
     }
+}
+
+async function ensureLocalTag(releaseTag) {
+    if (await tagExists(releaseTag)) {
+        console.log("ℹ️ Tag local já existe:", releaseTag);
+        return;
+    }
+
+    await createTag(releaseTag, releaseTag);
+    console.log("✅ Tag criada:", releaseTag);
+}
+
+async function ensureRemoteTag(remoteName, releaseTag) {
+    if (await remoteTagExists(remoteName, releaseTag)) {
+        console.log(`ℹ️ Tag remota já existe em ${remoteName}:`, releaseTag);
+        return;
+    }
+
+    console.log(`ℹ️ Enviando tag para ${remoteName}:`, releaseTag);
+    return true;
+}
+
+async function getReleaseByTagOrNull(repository, releaseTag, token) {
+    return getGitHubReleaseByTag({
+        owner: repository.owner,
+        repo: repository.repo,
+        tagName: releaseTag,
+        token
+    });
+}
+
+async function createOrUpdateRelease({
+    repository,
+    releaseTag,
+    branchName,
+    config,
+    token,
+    draft,
+    prerelease
+}) {
+    const existingRelease = await getReleaseByTagOrNull(repository, releaseTag, token);
+
+    if (!existingRelease) {
+        return createGitHubRelease({
+            owner: repository.owner,
+            repo: repository.repo,
+            tagName: releaseTag,
+            targetCommitish: branchName,
+            name: releaseTag,
+            body: `Release automática da versão ${config.version}.`,
+            token,
+            draft,
+            prerelease
+        });
+    }
+
+    if (existingRelease.draft) {
+        const release = await updateGitHubRelease({
+            owner: repository.owner,
+            repo: repository.repo,
+            releaseId: existingRelease.id,
+            token,
+            draft,
+            prerelease,
+            name: existingRelease.name || releaseTag,
+            body: existingRelease.body || `Release automática da versão ${config.version}.`
+        });
+
+        console.log("ℹ️ Release existente reaproveitada:", release.html_url);
+        return release;
+    }
+
+    if (draft || prerelease) {
+        throw new Error(
+            `A release ${releaseTag} já existe publicada. Use --publish-draft apenas para rascunhos existentes.`
+        );
+    }
+
+    throw new Error(
+        `A release ${releaseTag} já existe publicada. Ajuste a versão antes de publicar novamente.`
+    );
 }
 
 export default async function publish(args = []) {
@@ -100,16 +185,12 @@ export default async function publish(args = []) {
     const branchName = await getCurrentBranch();
     const releaseTag = getReleaseTag(config.version);
     const sourceFile = path.resolve(process.cwd(), getOutputFile(config));
+    const assetName = getAssetName(sourceFile);
 
     await fs.access(sourceFile);
 
     if (options.publishDraft) {
-        const release = await getGitHubReleaseByTag({
-            owner: repository.owner,
-            repo: repository.repo,
-            tagName: releaseTag,
-            token
-        });
+        const release = await getReleaseByTagOrNull(repository, releaseTag, token);
 
         if (!release) {
             throw new Error(
@@ -123,7 +204,7 @@ export default async function publish(args = []) {
             );
         }
 
-        await replaceExistingAsset(release, sourceFile, token, repository);
+        await removeExistingAssetIfNeeded(release, sourceFile, token, repository);
 
         const updatedRelease = await updateGitHubRelease({
             owner: repository.owner,
@@ -139,7 +220,7 @@ export default async function publish(args = []) {
         const asset = await uploadGitHubReleaseAsset({
             uploadUrl: updatedRelease.upload_url,
             assetPath: sourceFile,
-            assetName: path.basename(sourceFile),
+            assetName,
             token
         });
 
@@ -148,41 +229,32 @@ export default async function publish(args = []) {
         return;
     }
 
-    if (await tagExists(releaseTag)) {
-        throw new Error(`A tag ${releaseTag} já existe localmente.`);
+    await ensureLocalTag(releaseTag);
+
+    if (await ensureRemoteTag(remoteName, releaseTag)) {
+        await pushBranch(remoteName, branchName);
+        await pushTag(remoteName, releaseTag);
+        console.log("✅ Branch e tag enviados para o Git");
     }
 
-    if (await remoteTagExists(remoteName, releaseTag)) {
-        throw new Error(`A tag ${releaseTag} já existe no remoto ${remoteName}.`);
-    }
-
-    await createTag(releaseTag, releaseTag);
-
-    console.log("✅ Tag criada:", releaseTag);
-
-    await pushBranch(remoteName, branchName);
-    await pushTag(remoteName, releaseTag);
-
-    console.log("✅ Branch e tag enviados para o Git");
-
-    const release = await createGitHubRelease({
-        owner: repository.owner,
-        repo: repository.repo,
-        tagName: releaseTag,
-        targetCommitish: branchName,
-        name: releaseTag,
-        body: `Release automática da versão ${config.version}.`,
+    const release = await createOrUpdateRelease({
+        repository,
+        releaseTag,
+        branchName,
+        config,
         token,
         draft: options.draft,
         prerelease: options.prerelease
     });
 
-    console.log("✅ Release criada no GitHub:", release.html_url);
+    console.log("✅ Release pronta no GitHub:", release.html_url);
+
+    await removeExistingAssetIfNeeded(release, sourceFile, token, repository);
 
     const asset = await uploadGitHubReleaseAsset({
         uploadUrl: release.upload_url,
         assetPath: sourceFile,
-        assetName: path.basename(sourceFile),
+        assetName,
         token
     });
 
