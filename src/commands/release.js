@@ -20,7 +20,7 @@ export default async function release(args = []) {
     const releaseType = parseReleaseType(args);
 
     console.log("🚀 Comando release");
-    console.log("🔧 Tipo:", releaseType);
+    console.log("🔧 Tipo de release:", releaseType);
 
     let config = await loadConfig();
 
@@ -34,7 +34,7 @@ export default async function release(args = []) {
 
     await saveConfig(config);
 
-    console.log("✅ Versão atualizada:", newVersion);
+    console.log("✅ Versão atualizada para:", newVersion);
     console.log("");
 
     await build();
@@ -43,7 +43,7 @@ export default async function release(args = []) {
 
     try {
         await addAllAndCommit(commitMessage);
-        console.log("✅ Alterações commitadas no Git:", commitMessage);
+        console.log("✅ Commit criado no Git:", commitMessage);
     } catch (error) {
         if (error.message?.includes("nothing to commit")) {
             console.log("ℹ️ Nenhuma alteração para commitar após o build.");

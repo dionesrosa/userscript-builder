@@ -82,6 +82,11 @@ export async function pushBranch(remoteName, branchName, cwd = process.cwd()) {
     await runGit(["push", remoteName, branchName], cwd);
 }
 
+export async function pushCurrentBranch(remoteName, cwd = process.cwd()) {
+    const branchName = await getCurrentBranch(cwd);
+    await pushBranch(remoteName, branchName, cwd);
+}
+
 export async function pushTag(remoteName, tagName, cwd = process.cwd()) {
     await runGit(["push", remoteName, tagName], cwd);
 }

@@ -27,6 +27,11 @@
   "type": "module",
 
   "main": "./src/index.js",
+  "files": [
+    "bin",
+    "src",
+    "README.md"
+  ],
 
   "bin": {
     "userscript-builder": "./bin/usb.js",
@@ -48,6 +53,9 @@
   },
 
   "homepage": "https://github.com/dionesrosa/userscript-builder#readme",
+  "publishConfig": {
+    "access": "public"
+  },
 
   "engines": {
     "node": ">=20"

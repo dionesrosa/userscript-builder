@@ -9,6 +9,7 @@ import {
     getCurrentBranch,
     getRemoteUrl,
     pushBranch,
+    pushCurrentBranch,
     pushTag,
     remoteTagExists,
     tagExists
@@ -184,6 +185,7 @@ export default async function publish(args = []) {
     await assertCleanWorkingTree();
 
     console.log("✅ Árvore de trabalho limpa");
+    console.log("📦 Preparando publicação para a versão:", config.version);
 
     const remoteName = process.env.USERSCRIPT_PUBLISH_REMOTE || "origin";
     const remoteUrl = await getRemoteUrl(remoteName);
@@ -246,7 +248,7 @@ export default async function publish(args = []) {
         });
 
         console.log("✅ Draft publicada no GitHub:", updatedRelease.html_url);
-        console.log("✅ Asset enviado:", asset.browser_download_url);
+        console.log("✅ Asset enviado para o GitHub:", asset.browser_download_url);
         return;
     }
 
@@ -255,7 +257,12 @@ export default async function publish(args = []) {
     await pushReleaseRefs({
         remoteName,
         branchName,
-        releaseTag
+        releaseTag,
+        pushBranchImpl: async (remote, currentBranch) => {
+            if (branchName) {
+                await pushBranch(remote, currentBranch);
+            }
+        }
     });
 
     const release = await createOrUpdateRelease({
@@ -268,7 +275,7 @@ export default async function publish(args = []) {
         prerelease: options.prerelease
     });
 
-    console.log("✅ Release pronta no GitHub:", release.html_url);
+    console.log("✅ Release criada no GitHub:", release.html_url);
 
     await removeExistingAssetIfNeeded(release, sourceFile, token, repository);
 
@@ -279,5 +286,5 @@ export default async function publish(args = []) {
         token
     });
 
-    console.log("✅ Asset enviado:", asset.browser_download_url);
+    console.log("✅ Asset enviado para o GitHub:", asset.browser_download_url);
 }

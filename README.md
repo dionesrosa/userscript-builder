@@ -8,14 +8,14 @@ A modern CLI toolkit for creating, building and releasing browser UserScripts.
 - Generate Tampermonkey metadata
 - Bundle project files
 - Version management
-- Local release flow
-- Publish automation (future)
+- Release flow with automatic commit
+- Publish automation to GitHub Releases
 
 ## 📦 Installation
 
 ```bash
 npm install
-````
+```
 
 ## 🔨 Usage
 
@@ -25,7 +25,7 @@ Build your UserScript:
 usb build
 ```
 
-Create a local release:
+Create a release and bump the version:
 
 ```bash
 usb release patch
@@ -33,11 +33,23 @@ usb release minor
 usb release major
 ```
 
-Publish the built script to the configured destination:
+This command will:
+- update the version in the config
+- run the build
+- create a Git commit with the new version
+
+Publish the built script to GitHub:
 
 ```bash
 usb publish
 ```
+
+This command will:
+- validate the Git working tree
+- push the current branch to the remote
+- create or update a Git tag like `v1.0.1`
+- publish a GitHub Release
+- upload the built `.user.js` artifact from `dist/`
 
 Draft and prerelease examples:
 
@@ -47,23 +59,22 @@ usb publish --prerelease
 usb publish --publish-draft
 ```
 
+## ⚙️ Requirements
+
 `usb publish` requires:
 - a clean Git working tree
 - a Git remote named `origin` pointing to GitHub
-- `GITHUB_TOKEN` or `GH_TOKEN` set in the environment
-
-It will:
-- create a tag like `v1.0.1`
-- push the branch and tag
-- create a GitHub Release
-- upload the built `.user.js` from `dist/`
-- publish an existing draft release when `--publish-draft` is used
+- one of the following configured for GitHub API access:
+  - `GITHUB_TOKEN`
+  - `GH_TOKEN`
+  - `GITHUB_PAT`
+  - or GitHub CLI authentication via `gh auth login`
 
 ## 📁 Project Structure
 
 Example:
 
-```
+```text
 my-userscript/
 ├── src/
 │   └── index.js
@@ -86,10 +97,16 @@ Install dependencies:
 npm install
 ```
 
-Run:
+Run locally:
 
 ```bash
 npm run dev
+```
+
+Run tests:
+
+```bash
+npm test
 ```
 
 ## 📄 License
