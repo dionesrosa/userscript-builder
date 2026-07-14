@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { execFileSync } from "node:child_process";
 import { getRemoteUrl } from "./git.js";
 
 const GITHUB_API_VERSION = "2026-03-10";
@@ -59,8 +60,24 @@ export async function getGitHubRepository() {
     return repository;
 }
 
-export function getGitHubToken() {
-    return process.env.GITHUB_TOKEN || process.env.GH_TOKEN || "";
+function getGitHubTokenFromCli(execFileSyncImpl = execFileSync) {
+    try {
+        const token = execFileSyncImpl("gh", ["auth", "token"], {
+            encoding: "utf8",
+            stdio: ["ignore", "pipe", "pipe"]
+        });
+
+        return String(token || "").trim();
+    } catch {
+        return "";
+    }
+}
+
+export function getGitHubToken(execFileSyncImpl = execFileSync) {
+    return process.env.GITHUB_TOKEN
+        || process.env.GH_TOKEN
+        || process.env.GITHUB_PAT
+        || getGitHubTokenFromCli(execFileSyncImpl);
 }
 
 function getGitHubHeaders(token) {

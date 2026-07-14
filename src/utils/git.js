@@ -73,6 +73,11 @@ export async function createTag(tagName, message, cwd = process.cwd()) {
     await runGit(["tag", "-a", tagName, "-m", message], cwd);
 }
 
+export async function addAllAndCommit(message, cwd = process.cwd()) {
+    await runGit(["add", "-A"], cwd);
+    await runGit(["commit", "-m", message], cwd);
+}
+
 export async function pushBranch(remoteName, branchName, cwd = process.cwd()) {
     await runGit(["push", remoteName, branchName], cwd);
 }

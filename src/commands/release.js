@@ -1,5 +1,6 @@
 import { loadConfig, saveConfig } from "../utils/config.js";
 import { validateConfig } from "../utils/validator.js";
+import { addAllAndCommit } from "../utils/git.js";
 import { bumpVersion } from "../utils/version.js";
 import build from "./build.js";
 
@@ -37,4 +38,18 @@ export default async function release(args = []) {
     console.log("");
 
     await build();
+
+    const commitMessage = `chore(release): atualizar versão para ${newVersion}`;
+
+    try {
+        await addAllAndCommit(commitMessage);
+        console.log("✅ Alterações commitadas no Git:", commitMessage);
+    } catch (error) {
+        if (error.message?.includes("nothing to commit")) {
+            console.log("ℹ️ Nenhuma alteração para commitar após o build.");
+            return;
+        }
+
+        throw error;
+    }
 }

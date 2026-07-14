@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
 import {
+    addAllAndCommit,
     assertCleanWorkingTree,
     remoteTagExists
 } from "../src/utils/git.js";
@@ -24,6 +25,19 @@ test("assertCleanWorkingTree rejeita árvore suja", async () => {
         () => assertCleanWorkingTree(dir),
         /pendentes de commit/
     );
+});
+
+test("addAllAndCommit cria um commit quando há mudanças", async () => {
+    const dir = await createTempDir("usb-git-commit-");
+    await runGit(["init"], dir);
+    await runGit(["config", "user.name", "Test User"], dir);
+    await runGit(["config", "user.email", "test@example.com"], dir);
+    await fs.writeFile(path.join(dir, "arquivo.txt"), "x", "utf-8");
+
+    await addAllAndCommit("test commit", dir);
+
+    const { stdout } = await runGit(["log", "--oneline", "-1"], dir);
+    assert.match(stdout, /test commit/);
 });
 
 test("remoteTagExists retorna falso quando a tag não existe", async () => {

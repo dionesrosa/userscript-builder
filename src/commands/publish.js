@@ -177,7 +177,7 @@ export default async function publish(args = []) {
 
     if (!token) {
         throw new Error(
-            "Token do GitHub não encontrado. Defina GITHUB_TOKEN ou GH_TOKEN."
+            "Token do GitHub não encontrado. Defina GITHUB_TOKEN, GH_TOKEN, GITHUB_PAT ou autentique-se com o GitHub CLI (gh auth login)."
         );
     }
 

@@ -5,6 +5,7 @@ import path from "node:path";
 import {
     createGitHubRelease,
     getGitHubReleaseByTag,
+    getGitHubToken,
     updateGitHubRelease,
     uploadGitHubReleaseAsset
 } from "../src/utils/github.js";
@@ -136,5 +137,37 @@ test("uploadGitHubReleaseAsset envia asset para a URL correta", async () => {
         assert.match(calledUrl, /name=script\.user\.js/);
     } finally {
         globalThis.fetch = originalFetch;
+    }
+});
+
+test("getGitHubToken usa o token do GitHub CLI quando não há variável de ambiente", () => {
+    const originalToken = process.env.GITHUB_TOKEN;
+    const originalGhToken = process.env.GH_TOKEN;
+    const originalGithubPat = process.env.GITHUB_PAT;
+
+    delete process.env.GITHUB_TOKEN;
+    delete process.env.GH_TOKEN;
+    delete process.env.GITHUB_PAT;
+
+    try {
+        assert.equal(getGitHubToken(() => "cli-token\n"), "cli-token");
+    } finally {
+        if (originalToken === undefined) {
+            delete process.env.GITHUB_TOKEN;
+        } else {
+            process.env.GITHUB_TOKEN = originalToken;
+        }
+
+        if (originalGhToken === undefined) {
+            delete process.env.GH_TOKEN;
+        } else {
+            process.env.GH_TOKEN = originalGhToken;
+        }
+
+        if (originalGithubPat === undefined) {
+            delete process.env.GITHUB_PAT;
+        } else {
+            process.env.GITHUB_PAT = originalGithubPat;
+        }
     }
 });
