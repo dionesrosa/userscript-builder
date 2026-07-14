@@ -24,11 +24,11 @@ import {
     uploadGitHubReleaseAsset
 } from "../utils/github.js";
 
-function getReleaseTag(version) {
+export function getReleaseTag(version) {
     return `v${version}`;
 }
 
-function parsePublishOptions(args) {
+export function parsePublishOptions(args) {
     const options = {
         draft: args.includes("--draft"),
         prerelease: args.includes("--prerelease"),
@@ -44,7 +44,7 @@ function parsePublishOptions(args) {
     return options;
 }
 
-function getAssetName(sourceFile) {
+export function getAssetName(sourceFile) {
     return path.basename(sourceFile);
 }
 

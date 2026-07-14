@@ -6,13 +6,13 @@ import { generateConfig } from "../utils/config-template.js";
 import { generateEntryScript } from "../utils/script-template.js";
 import { writeProjectFile } from "../utils/files.js";
 
-function parseInitArgs(args) {
+export function parseInitArgs(args) {
     return {
         yes: args.includes("--yes") || args.includes("-y")
     };
 }
 
-function buildDefaultAnswers(folder) {
+export function buildDefaultAnswers(folder) {
     return {
         name: folder.split(/[\\/]/).pop() || "userscript",
         version: "1.0.0",

@@ -3,7 +3,7 @@ import { validateConfig } from "../utils/validator.js";
 import { bumpVersion } from "../utils/version.js";
 import build from "./build.js";
 
-function parseReleaseType(args) {
+export function parseReleaseType(args) {
     const releaseType = args[0] || "patch";
 
     if (!["patch", "minor", "major"].includes(releaseType)) {

@@ -34,7 +34,8 @@
   },
 
   "scripts": {
-    "dev": "node ./bin/usb.js"
+    "dev": "node ./bin/usb.js",
+    "test": "node --test"
   },
 
   "repository": {

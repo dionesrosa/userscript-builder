@@ -3,16 +3,16 @@ import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
 
-async function runGit(args) {
+async function runGit(args, cwd = process.cwd()) {
     return execFileAsync("git", args, {
-        cwd: process.cwd(),
+        cwd,
         windowsHide: true
     });
 }
 
-export async function assertCleanWorkingTree() {
+export async function assertCleanWorkingTree(cwd = process.cwd()) {
     try {
-        const { stdout } = await runGit(["status", "--porcelain"]);
+        const { stdout } = await runGit(["status", "--porcelain"], cwd);
 
         if (stdout.trim()) {
             throw new Error(
@@ -33,8 +33,8 @@ export async function assertCleanWorkingTree() {
     }
 }
 
-export async function getCurrentBranch() {
-    const { stdout } = await runGit(["rev-parse", "--abbrev-ref", "HEAD"]);
+export async function getCurrentBranch(cwd = process.cwd()) {
+    const { stdout } = await runGit(["rev-parse", "--abbrev-ref", "HEAD"], cwd);
     const branch = stdout.trim();
 
     if (!branch || branch === "HEAD") {
@@ -44,9 +44,9 @@ export async function getCurrentBranch() {
     return branch;
 }
 
-export async function getRemoteUrl(remoteName = "origin") {
+export async function getRemoteUrl(remoteName = "origin", cwd = process.cwd()) {
     try {
-        const { stdout } = await runGit(["remote", "get-url", remoteName]);
+        const { stdout } = await runGit(["remote", "get-url", remoteName], cwd);
         const url = stdout.trim();
 
         return url || null;
@@ -60,34 +60,34 @@ export async function getRemoteUrl(remoteName = "origin") {
     }
 }
 
-export async function tagExists(tagName) {
+export async function tagExists(tagName, cwd = process.cwd()) {
     try {
-        await runGit(["rev-parse", "--verify", `refs/tags/${tagName}`]);
+        await runGit(["rev-parse", "--verify", `refs/tags/${tagName}`], cwd);
         return true;
     } catch {
         return false;
     }
 }
 
-export async function createTag(tagName, message) {
-    await runGit(["tag", "-a", tagName, "-m", message]);
+export async function createTag(tagName, message, cwd = process.cwd()) {
+    await runGit(["tag", "-a", tagName, "-m", message], cwd);
 }
 
-export async function pushBranch(remoteName, branchName) {
-    await runGit(["push", remoteName, branchName]);
+export async function pushBranch(remoteName, branchName, cwd = process.cwd()) {
+    await runGit(["push", remoteName, branchName], cwd);
 }
 
-export async function pushTag(remoteName, tagName) {
-    await runGit(["push", remoteName, tagName]);
+export async function pushTag(remoteName, tagName, cwd = process.cwd()) {
+    await runGit(["push", remoteName, tagName], cwd);
 }
 
-export async function remoteTagExists(remoteName, tagName) {
+export async function remoteTagExists(remoteName, tagName, cwd = process.cwd()) {
     const { stdout } = await runGit([
         "ls-remote",
         "--tags",
         remoteName,
         `refs/tags/${tagName}`
-    ]);
+    ], cwd);
 
     return Boolean(stdout.trim());
 }
